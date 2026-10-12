@@ -2,6 +2,9 @@ __pycache__/
 *.py[cod]
 node_modules/
 .venv/
+.pipcache/
+.tmp/
+.idea/
 .env
 .env.*
 *.log
@@ -10,11 +13,6 @@ out_*/
 *.mp4
 *.mkv
 *.mov
-input/*
-!input/README.md
-film/timing/words.json
-film/subs_ids.json
-film/ui/frames_release_*.json
-film/ui/pane_*/
-film/cache/*
-!film/cache/wave_rms_1ms.npy
+
+# 本地素材库（取材器 / 工作台从网图、漫画库里描出来的，含第三方参考图，不入库）
+/assets/

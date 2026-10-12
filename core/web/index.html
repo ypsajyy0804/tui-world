@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>tui-world</title>
+<style>
+  :root{--bg:#07050a;--panel:#0c0906;--ink:#ffb054;--hot:#fff2d2;--dim:#7c5426;--line:#2b1c0c;}
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.55 Consolas,"Sarasa Mono SC","Microsoft YaHei",monospace;display:flex;overflow:hidden}
+  header{padding:9px 12px;border-bottom:1px solid var(--line);font-size:11px;letter-spacing:.14em;color:var(--dim);flex:0 0 auto}
+  #chat{width:30%;min-width:320px;display:flex;flex-direction:column;border-right:1px solid var(--line)}
+  #log{flex:1;overflow-y:auto;padding:14px}
+  .msg{margin:0 0 16px}
+  .msg .who{font-size:11px;letter-spacing:.1em;color:var(--dim)}
+  .msg.user .who{color:var(--ink)}
+  .msg .txt{white-space:pre-wrap;color:var(--hot)}
+  .msg.user .txt{color:var(--ink)}
+  .msg .calls{margin-top:6px;font-size:12px;color:var(--dim)}
+  .calls b{display:inline-block;border:1px solid var(--line);border-radius:2px;padding:0 5px;margin:3px 5px 0 0;font-weight:400}
+  .sys{color:#c8763a}
+  #composer{display:flex;gap:8px;padding:10px;border-top:1px solid var(--line);flex:0 0 auto}
+  textarea{flex:1;height:66px;resize:none;background:#090705;color:var(--hot);border:1px solid var(--line);
+           border-radius:2px;padding:8px;font:inherit;outline:none}
+  textarea:focus{border-color:var(--dim)}
+  button{background:#1a1108;color:var(--ink);border:1px solid var(--line);padding:0 18px;font:inherit;cursor:pointer;border-radius:2px}
+  button:hover{border-color:var(--ink)}
+  button:disabled{opacity:.4;cursor:default}
+  #world{flex:1;display:flex;flex-direction:column;min-width:0;position:relative}
+  #whead{display:flex;gap:16px;justify-content:space-between}
+  #stage{flex:1;display:flex;align-items:center;justify-content:center;padding:0;position:relative;min-height:0;background:#050203}
+  #frame{width:100%;height:100%;object-fit:fill;image-rendering:pixelated;border:1px solid var(--line);box-shadow:0 0 40px #000 inset}
+  #frame.thinking{animation:breathe 1.7s ease-in-out infinite}
+  @keyframes breathe{0%,100%{filter:brightness(1)}50%{filter:brightness(1.4)}}
+</style>
+</head>
+<body>
+<div id="chat">
+<header style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+  <span>对话 &nbsp;/&nbsp; CHANNEL</span>
+  <a href="/wb" style="color:var(--ink);text-decoration:none;border-bottom:1px dotted var(--dim)">素材工作台 →</a>
+</header>
+  <div id="log"></div>
+  <div id="composer">
+    <textarea id="ta" placeholder="说点什么…（Enter 发送，Shift+Enter 换行）"></textarea>
+    <button id="send">发送</button>
+  </div>
+</div>
+<div id="world">
+  <header id="whead"><span>世界 / WORLD</span><span id="wmood"></span></header>
+  <div id="stage"><img id="frame" alt="world"></div>
+</div>
+<script>
+const $ = (id) => document.getElementById(id);
+let version = 0, lastMsg = -1, lastStatus = "";
+
+const esc = (t) => String(t == null ? "" : t).replace(/[&<>]/g,
+  (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;"}[c]));
+
+function renderMessages(msgs) {
+  if (msgs.length === lastMsg) return;
+  lastMsg = msgs.length;
+  const box = $("log");
+  box.innerHTML = "";
+  for (const m of msgs) {
+    const d = document.createElement("div");
+    d.className = "msg " + (m.role === "user" ? "user" : m.role);
+    const who = m.role === "user" ? "你" : (m.role === "system" ? "SYS" : "世界");
+    d.innerHTML = `<div class="who">${who}</div><div class="txt"></div>` +
+      (m.calls && m.calls.length
+        ? `<div class="calls">${m.calls.map(c => `<b>${c.name}</b>`).join("")}</div>` : "");
+    d.querySelector(".txt").textContent = m.text || "";
+    box.appendChild(d);
+  }
+  box.scrollTop = box.scrollHeight;
+}
+
+function renderState(s) {
+  if (window.__build == null) window.__build = s.build;
+  else if (s.build && s.build !== window.__build) { location.reload(); return; }
+  version = s.version;
+  renderMessages(s.messages);
+  const thinking = s.status === "thinking";
+  $("frame").className = thinking ? "thinking" : "";
+  $("send").disabled = thinking;
+  const sig = s.world.signal && s.world.signal.id ? s.world.signal : null;
+  $("wmood").textContent = s.world.stage ? "STAGE " + s.world.stage
+    : (sig ? "SIGNAL " + (sig.name || sig.id) : "屏幕空着");
+}
+
+let timer = null;
+async function poll(force) {
+  let s = null;
+  try {
+    s = await (await fetch("/state")).json();
+    const changed = s.version !== version;
+    renderState(s);
+    if (changed || force || s.anim) {
+      const box = $("stage").getBoundingClientRect();
+      const w = Math.max(360, Math.round(box.width) - 2);
+      const h = Math.max(260, Math.round(box.height) - 2);
+      $("frame").src = "/frame?v=" + s.version + "&w=" + w + "&h=" + h;
+    }
+  } catch (e) {}
+  clearTimeout(timer);
+  timer = setTimeout(() => poll(false), s && s.anim ? 130 : 900);
+}
+
+async function send() {
+  const ta = $("ta");
+  const text = ta.value.trim();
+  if (!text) return;
+  ta.value = "";
+  await fetch("/say", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({text})});
+  poll(true);
+}
+
+$("send").onclick = send;
+$("ta").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
+});
+let resizeTimer = null;
+window.addEventListener("resize", () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => poll(true), 220);
+});
+poll(true);
+</script>
+</body>
+</html>

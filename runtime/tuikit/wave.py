@@ -1,7 +1,5 @@
 """Real-time waveform for the header: per-millisecond RMS, decoded once with ffmpeg and cached."""
 from __future__ import annotations
-from pv_paths import ROOT as PV_ROOT
-from pv_text import load_chinese, lyric_fragment
 import subprocess
 from functools import lru_cache
 from pathlib import Path

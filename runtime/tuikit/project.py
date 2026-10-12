@@ -1,7 +1,5 @@
 """PROJECT.yaml loader: the only place constants come from."""
 from __future__ import annotations
-from pv_paths import ROOT as PV_ROOT
-from pv_text import load_chinese, lyric_fragment
 import json
 from dataclasses import dataclass, field
 from functools import lru_cache

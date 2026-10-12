@@ -25,8 +25,6 @@ film.blur(t0, t1) limits it to registered spans (carrier flights, whips). sample
 costs 4 renders and is returned as is.
 """
 from __future__ import annotations
-from pv_paths import ROOT as PV_ROOT
-from pv_text import load_chinese, lyric_fragment
 import bisect
 import random
 import zlib

@@ -39,8 +39,6 @@ Everything is a function of the View's inputs, so frame = f(t) holds; flicker in
 from ease.tick(t, rate), never int(t * rate).
 """
 from __future__ import annotations
-from pv_paths import ROOT as PV_ROOT
-from pv_text import load_chinese, lyric_fragment
 import math
 import sys
 import time
@@ -1071,3 +1069,35 @@ def cube(v: View, center, size: float, yaw: float=0.0, tilt: float=0.0, **kw) ->
                 y2, z2 = (y * math.cos(b) - z1 * math.sin(b), y * math.sin(b) + z1 * math.cos(b))
                 pts.append((center[0] + x1, center[1] + y2, center[2] + z2))
     return v.solid(pts, _BOX, **kw)
+
+DOTS_FILL = ('\u2800', '\u2821', '\u2871', '\u2895', '\u28eb', '\u28ff')
+BLOCK_FILL = (' ', '\u2591', '\u2592', '\u2593', '\u2588')
+
+def shade_tex(verts, faces, lv: float=1.0, light=(-0.45, 0.8, 0.4), floor: float=0.15,
+              gain: float=1.0, ramp: str='dots', fade: float=22.0):
+    """A solid() texture: fill its front faces with a shading pattern (dark = sparser) from the
+    face's lambert term against `light` (world direction). ramp 'dots' uses braille densities
+    (1..8 dots per cell), 'block' uses the ░▒▓█ shades. Detail drops to one step when a face gets
+    small on screen (ppu below ~fade px per world unit). Feed as tex=... (tex_color defaults to
+    the solid's color): walls read as dark masses instead of empty wireframes."""
+    faces = tuple(tuple(int(i) for i in f) for f in faces)
+    n, _ = _normals(np.asarray(verts, float), faces)
+    lam = np.clip(n @ _unit(light), 0.0, 1.0)
+    lvl = np.clip(floor + gain * lam, 0.0, 1.0)
+    R = DOTS_FILL if ramp != 'block' else BLOCK_FILL
+    m = len(R) - 1
+
+    def fn(face, u, v, ppu):
+        s = lvl[np.clip(np.asarray(face, np.int64), 0, len(lvl) - 1)]
+        k = np.clip((s * m + 0.5).astype(np.int64), 0, m)
+        if fade > 0:
+            near = np.clip((np.asarray(ppu, np.float64) / fade * m + 0.5).astype(np.int64), 1, m)
+            k = np.minimum(k, near)
+        return np.array([R[i] for i in k]), lv * (0.7 + 0.3 * s)
+    return fn
+
+def shade_box(lo, hi, **kw):
+    """shade_tex() for an axis-aligned box (the same geometry View.box builds)."""
+    (x0, y0, z0), (x1, y1, z1) = (lo, hi)
+    V = [(x, y, z) for z in (z0, z1) for y in (y0, y1) for x in (x0, x1)]
+    return shade_tex(V, _BOX, **kw)

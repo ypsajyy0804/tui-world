@@ -8,8 +8,6 @@ A carrier's life is  lift (2-4 frames before the cut, glow in place)
 Never wipe with a band, never dissolve the whole frame.
 """
 from __future__ import annotations
-from pv_paths import ROOT as PV_ROOT
-from pv_text import load_chinese, lyric_fragment
 import math
 import random
 from dataclasses import dataclass

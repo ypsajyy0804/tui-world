@@ -11,8 +11,6 @@ Workflow (see ../UI_PANE.md):
 No app process, no backend, no model calls: only the front end's look.
 """
 from __future__ import annotations
-from pv_paths import ROOT as PV_ROOT
-from pv_text import load_chinese, lyric_fragment
 import html
 import json
 import math

@@ -1,8 +1,8 @@
 {
-  "name": "world-search-you-dsh-pv",
+  "name": "tui-world",
   "version": "0.1.0",
   "private": true,
-  "description": "CPU build tools for the r21 TUI fan PV",
+  "description": "Conversation-driven TUI world display; TUI rendering engine forked from world-search-you-dsh-pv (MIT)",
   "license": "MIT",
   "dependencies": {"playwright": "1.63.0"}
 }

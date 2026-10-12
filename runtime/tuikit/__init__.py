@@ -11,8 +11,6 @@ Typical project layout (see ../example):
     timing/           beats.json, words.json
     film.py           def build(project) -> tuikit.Film
 """
-from pv_paths import ROOT as PV_ROOT
-from pv_text import load_chinese, lyric_fragment
 from .project import Project, load
 from .timing import Clock, Lyrics, lands
 from .film import Film, Ctx, Shot, Cut, Frame

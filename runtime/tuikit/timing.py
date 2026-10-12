@@ -14,8 +14,6 @@ words.json uses the schema produced by the word-alignment tool
 A lyrics.json with lines but no words also loads (line-level only).
 """
 from __future__ import annotations
-from pv_paths import ROOT as PV_ROOT
-from pv_text import load_chinese, lyric_fragment
 import bisect
 import json
 import math

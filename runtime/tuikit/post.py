@@ -6,8 +6,6 @@ Trail (phosphor persistence) is left out on purpose: it makes a frame depend on 
 one, which breaks 'frame = f(t)' at chunk boundaries unless every chunk pre-renders a seed frame.
 """
 from __future__ import annotations
-from pv_paths import ROOT as PV_ROOT
-from pv_text import load_chinese, lyric_fragment
 import numpy as np
 from PIL import Image, ImageFilter
 

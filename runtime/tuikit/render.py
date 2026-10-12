@@ -26,8 +26,6 @@ as BT.709. Untagged HD is decoded as BT.709 by browsers and phones; converting w
 BT.601 matrix shifted #ff3b30 by 17 levels (measured 2026-09-28). Same fix as pdoom-video's render.ts.
 """
 from __future__ import annotations
-from pv_paths import ROOT as PV_ROOT
-from pv_text import load_chinese, lyric_fragment
 import argparse
 import importlib.util
 import json

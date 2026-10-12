@@ -1,7 +1,5 @@
 """Easing, interpolation and small maths helpers."""
 from __future__ import annotations
-from pv_paths import ROOT as PV_ROOT
-from pv_text import load_chinese, lyric_fragment
 import math
 FPS = 24
 

@@ -13,8 +13,6 @@ Without audio.json every call returns 0 / [] / None (music.available is False), 
 renders; scenes that want a fallback can use clock.pulse(t).
 """
 from __future__ import annotations
-from pv_paths import ROOT as PV_ROOT
-from pv_text import load_chinese, lyric_fragment
 import bisect
 import json
 import math

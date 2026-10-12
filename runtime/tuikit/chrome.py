@@ -9,8 +9,6 @@ Lyric band rules (from the owner's review and the director audit):
   then fades.
 """
 from __future__ import annotations
-from pv_paths import ROOT as PV_ROOT
-from pv_text import load_chinese, lyric_fragment
 import random
 from dataclasses import dataclass, field
 from typing import Callable

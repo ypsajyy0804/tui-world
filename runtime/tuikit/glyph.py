@@ -1,7 +1,5 @@
 """Glyph drawing: decode-typing, token chips, TUI boxes, background field, text sprites."""
 from __future__ import annotations
-from pv_paths import ROOT as PV_ROOT
-from pv_text import load_chinese, lyric_fragment
 import random
 import zlib
 from PIL import Image, ImageDraw, ImageFilter

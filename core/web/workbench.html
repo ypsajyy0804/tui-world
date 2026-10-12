@@ -1,0 +1,740 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>tui-world · 素材工作台</title>
+<style>
+  :root{--bg:#07050a;--panel:#0c0906;--ink:#ffb054;--hot:#fff2d2;--dim:#7c5426;--line:#2b1c0c;--sig:#8fd0ff}
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.5 Consolas,"Sarasa Mono SC","Microsoft YaHei",monospace;display:grid;grid-template-columns:290px minmax(0,1fr) 330px;overflow:hidden}
+  header{padding:8px 12px;border-bottom:1px solid var(--line);font-size:11px;letter-spacing:.12em;color:var(--dim);display:flex;justify-content:space-between;align-items:center;gap:10px}
+  a{color:var(--ink);text-decoration:none;border-bottom:1px dotted var(--dim)}
+  .col{display:flex;flex-direction:column;min-width:0;min-height:0;border-right:1px solid var(--line)}
+  .col:last-child{border-right:0}
+  .scroll{flex:1;overflow-y:auto;padding:10px;min-height:0}
+  .cap{font-size:10px;letter-spacing:.14em;color:var(--dim);display:block;margin:10px 0 6px}
+  .cap:first-child{margin-top:0}
+  select,input[type=text],textarea{background:#090705;color:var(--hot);border:1px solid var(--line);border-radius:2px;padding:5px 7px;font:inherit;outline:none;width:100%}
+  select:focus,input:focus,textarea:focus{border-color:var(--dim)}
+  button{background:#1a1108;color:var(--ink);border:1px solid var(--line);padding:5px 12px;font:inherit;cursor:pointer;border-radius:2px}
+  button:hover{border-color:var(--ink)}
+  button:disabled{opacity:.4;cursor:default}
+  button.on{background:#2a1a0a;border-color:var(--ink);color:var(--hot)}
+  .tabs{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+  .row{display:flex;gap:6px;margin-bottom:8px;align-items:center}
+  .row label{font-size:11px;color:var(--dim);white-space:nowrap}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:5px}
+  .grid .th{border:1px solid var(--line);cursor:pointer;aspect-ratio:.72;overflow:hidden;background:#000;position:relative}
+  .grid.pix .th{aspect-ratio:1}
+  .grid .th img{width:100%;height:100%;object-fit:cover;display:block;opacity:.85}
+  .grid .th:hover{border-color:var(--ink)}
+  .grid .th.sel{border-color:var(--hot);box-shadow:0 0 0 1px var(--hot) inset}
+  .grid .th span{position:absolute;left:2px;bottom:1px;font-size:10px;color:var(--hot);text-shadow:0 0 3px #000}
+.grid .th b.sc{position:absolute;right:3px;top:2px;font-size:11px;font-weight:600;text-shadow:0 0 4px #000,0 0 2px #000;pointer-events:none}
+#guide{margin:6px 12px 0;padding:10px 14px;border:1px solid var(--line);background:#0d0a06;
+  font-size:12px;line-height:2.0;color:var(--hot);border-radius:2px}
+#guide b{color:var(--ink)}
+#help a{color:var(--sig)}
+  #studio{display:flex;flex-direction:column;min-height:0}
+  #cvbox{flex:1;min-height:0;position:relative;background:#050308;border-bottom:1px solid var(--line)}
+  #cv{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair;touch-action:none}
+  #cvhint{position:absolute;left:10px;top:8px;font-size:11px;color:var(--dim);pointer-events:none}
+  #params{border-bottom:1px solid var(--line);padding:8px 10px;display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+  #params .grp{display:flex;gap:6px;align-items:center}
+  #params label{font-size:11px;color:var(--dim)}
+  input[type=range]{width:90px;accent-color:#c8763a;background:transparent}
+  #cands{height:210px;display:flex;gap:8px;padding:8px 10px;overflow-x:auto;align-items:stretch}
+  .cand{border:1px solid var(--line);background:#050308;cursor:pointer;flex:0 0 auto;display:flex;flex-direction:column;padding:3px;gap:3px}
+  .cand img{height:150px;width:auto;display:block;image-rendering:auto}
+  .cand .lab{font-size:10px;color:var(--dim);display:flex;justify-content:space-between;gap:8px}
+  .cand:hover{border-color:var(--ink)}
+  .cand.sel{border-color:var(--hot)}
+  .cand.sel .lab{color:var(--hot)}
+  #msg{min-height:34px;padding:6px 10px;font-size:11px;color:var(--dim);border-top:1px solid var(--line)}
+  #msg .err{color:#ff7c6a}
+  #msg .ok{color:#8fd0ff}
+  .lib{display:flex;gap:8px;align-items:center;border:1px solid var(--line);padding:4px;margin-bottom:5px}
+  .lib img{width:56px;height:42px;object-fit:cover;background:#000}
+  .lib .t{font-size:11px;overflow:hidden}
+  .lib .t b{color:var(--hot);font-weight:400}
+  .lib .t i{color:var(--dim);font-style:normal;display:block;font-size:10px}
+  .lib .ops{display:flex;flex-direction:column;gap:2px;margin-left:auto}
+  .lib .ops button{padding:1px 6px;font-size:11px}
+  .cand.rec{border-color:#ffd27f;box-shadow:0 0 0 1px #ffd27f inset}
+  #help{padding:5px 10px;font-size:11px;color:#6b4a24;border-bottom:1px solid var(--line)}
+  .dirs{font-size:10px;color:#4a3218;white-space:pre-wrap;word-break:break-all}
+  .spin{display:inline-block;animation:blink 1s linear infinite}
+  @keyframes blink{50%{opacity:.25}}
+</style>
+</head>
+<body>
+<div class="col">
+  <header><span>素材工作台 · SOURCES</span><a href="/">← 对话</a></header>
+  <div class="scroll">
+    <div class="tabs">
+      <button id="t-manga" class="on">漫画库</button>
+      <button id="t-pixiv">Pixiv</button>
+      <button id="t-fetch">抓取</button>
+      <button id="t-upload">上传</button>
+    </div>
+    <div id="pane-manga">
+      <span class="cap">系列</span><select id="series"></select>
+      <span class="cap">章节</span><select id="chapter"></select>
+      <span class="cap">页面（点选一页）</span>
+      <div id="pages" class="grid"></div>
+    </div>
+    <div id="pane-pixiv" style="display:none">
+      <span class="cap">图库（<span id="pixn">0</span> 张）</span>
+      <div id="pixgrid" class="grid pix"></div>
+    </div>
+    <div id="pane-upload" style="display:none">
+      <span class="cap">从本地上传一张参考图</span>
+      <input type="file" id="upfile" accept="image/*">
+      <p style="font-size:11px;color:var(--dim)">上传的图存在 D 盘缓存里，只作参考，不联网。</p>
+    </div>
+    <div id="pane-fetch" style="display:none">
+      <span class="cap">搜索漫画（komiic，经本机代理 <span id="fproxy">…</span>）</span>
+      <div class="row">
+        <input type="text" id="fkw" placeholder="如：葬送的芙莉莲">
+        <button id="fgo" style="flex:0 0 auto">搜索</button>
+      </div>
+      <div id="fhits"></div>
+      <div id="fchs" style="max-height:420px;overflow-y:auto"></div>
+      <p style="font-size:11px;color:#4a3218">下载的章节会打包成 CBZ 落到漫画库目录，
+        出现在「漫画库」标签里，然后就能走正常流程取景入库。</p>
+    </div>
+    <span class="cap">图库位置</span>
+    <div class="dirs" id="dirs"></div>
+  </div>
+</div>
+<div class="col" id="studio">
+  <header><span>调参与候选 · STUDIO</span><span id="srchint" style="color:var(--dim)">未选参考图</span></header>
+  <div id="cvbox">
+    <canvas id="cv"></canvas>
+    <div id="cvhint">拖拽画面上取景框；拖动框移动；拖四角缩放；双击复位</div>
+  </div>
+  <div id="params">
+    <div class="grp" title="网格密度：格子越多画面越清晰，描出来也越慢"><label>密度</label>
+      <button data-dens="96,64" class="dens">96×64</button>
+      <button data-dens="120,80" class="dens on">120×80</button>
+      <button data-dens="144,96" class="dens">144×96</button>
+    </div>
+    <div class="grp" title="明暗对比：画面发灰、边界不清就往右拉"><label>反差 <span id="cv-contrast">1.20</span></label>
+      <input type="range" id="contrast" min="60" max="200" value="120"></div>
+    <div class="grp" title="自动把和边缘连通的背景压黑（白纸页边、纯色底）；容差越大去掉越多"><label><input type="checkbox" id="key" checked> 去背 容差<span id="ktolv">0.16</span></label>
+      <input type="range" id="ktol" min="6" max="30" value="16"></div>
+    <div class="grp" title="白底漫画专用：黑白反过来，变成深底 + 发光的墨线"><label><input type="checkbox" id="invert"> 反相（墨线）</label></div>
+    <div class="grp" title="取景 = 裁剪范围；「自动取景」先自动去掉边缘空白"><label>取景</label>
+      <button id="pq-auto">自动取景</button><button id="pq-full">全图</button><button id="pq-top">上半</button>
+      <button id="pq-face">面部</button><button id="pq-mid">中部</button></div>
+    <button id="go" style="margin-left:auto" title="以当前参数为中心生成 6 张候选，并自动选中推荐项">生成候选</button>
+  </div>
+  <div id="help">参数直说：密度=网格粗细 · 反差=明暗对比 · 去背=自动压黑背景 · 反相=白底漫画转深底发光 · 取景=裁剪范围 <a href="#" id="guidebtn">每项怎么调？</a></div>
+  <div id="guide" style="display:none">
+    <b>密度</b>（96×64 / 120×80 / 144×96）：字符网格的粗细。96×64 粗、快，远景小物件够用；
+    120×80 均衡（默认）；144×96 最细，主角特写用，播放最吃资源。<br>
+    <b>反差</b>（0.6~2.0）：明暗对比。画面发灰、主体和背景糊在一起 → 加到 1.3~1.6；
+    原图本来就黑硬 → 减到 0.8~1.0。<br>
+    <b>去背·容差</b>：自动压黑"和边框连通的背景"。背景没去干净（残留色块）→ 右移加大；
+    主体边缘被啃掉 → 左移减小。<br>
+    <b>反相（墨线）</b>：白底黑线的漫画专用——黑白对调，变成深底 + 发光的墨线。<br>
+    <b>取景</b>：裁剪范围。「自动取景」按主体算；上/面/中是常用预设；也可以拖画布上的框手动调。<br>
+    <b>流程</b>：选图（自动取景 + 可描性评分）→ 生成候选（★ 是推荐）→ 挑最像的一张 →
+    「AI 建议」填名字标签 → 入库。入库后回对话页，说"给我看 XX"就能上屏。
+  </div>
+  <div id="cands"><span style="color:var(--dim);font-size:12px;align-self:center">候选区：先选一张参考图，再点「生成候选」</span></div>
+</div>
+<div class="col">
+  <header><span>入库 · SAVE</span><span id="savedn" style="color:var(--dim)"></span></header>
+  <div class="scroll">
+    <span class="cap">id（小写字母/数字/_/-）</span>
+    <input type="text" id="f-id" placeholder="如 harry_scar">
+    <span class="cap">名称（印在窗框上）</span>
+    <input type="text" id="f-name" placeholder="如 哈利·波特">
+    <span class="cap">别名（逗号分隔，模型用它们点名）</span>
+    <input type="text" id="f-aliases" placeholder="哈利,harry potter,hp">
+    <span class="cap">标签</span>
+    <input type="text" id="f-tags" placeholder="人物,魔法,电影">
+    <div class="row" style="margin-top:10px">
+      <button id="suggest">AI 建议</button>
+      <button id="save" style="color:var(--hot)">入库 →</button>
+    </div>
+    <div id="desc" style="font-size:11px;color:var(--dim)"></div>
+    <span class="cap">素材库（<span id="libn">0</span>）</span>
+    <div id="lib"></div>
+    <p style="font-size:11px;color:#4a3218">入库后回到对话页，直接说「给我看 XX」即可上屏。</p>
+  </div>
+  <div id="msg"></div>
+</div>
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (t) => String(t == null ? "" : t).replace(/[&<>"]/g,
+  (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+
+const S = {
+  tab: "manga",
+  src: null,                 // {kind:'manga',series,chapter,page} | {kind:'pixiv',name} | {kind:'upload',path}
+  img: null,
+  crop: [0, 0, 1, 1],
+  params: {cols: 120, rows: 80, contrast: 1.2, key: true, key_tol: 0.16, invert: false},
+  sel: -1,
+  busy: false,
+};
+
+function msg(html, cls) {
+  $("msg").innerHTML = html ? `<span class="${cls || ""}">${html}</span>` : "";
+}
+
+async function jget(url) {
+  const r = await fetch(url);
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || (url + " -> " + r.status));
+  return j;
+}
+async function jpost(url, body) {
+  const r = await fetch(url, {method: "POST", headers: {"Content-Type": "application/json"},
+                              body: JSON.stringify(body || {})});
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || (url + " -> " + r.status));
+  return j;
+}
+
+function setTab(t) {
+  S.tab = t;
+  for (const k of ["manga", "pixiv", "fetch", "upload"]) {
+    $("pane-" + k).style.display = (k === t) ? "" : "none";
+    $("t-" + k).classList.toggle("on", k === t);
+  }
+}
+$("t-manga").onclick = () => setTab("manga");
+$("t-pixiv").onclick = () => setTab("pixiv");
+$("t-upload").onclick = () => setTab("upload");
+$("t-fetch").onclick = () => { setTab("fetch"); loadFetchProxy(); };
+
+const io = new IntersectionObserver((es) => {
+  for (const e of es) {
+    if (!e.isIntersecting) continue;
+    const im = e.target;
+    if (im.dataset.src) { im.src = im.dataset.src; delete im.dataset.src; }
+    io.unobserve(im);
+  }
+}, {rootMargin: "120px"});
+function hookLazy() { document.querySelectorAll("img[data-src]").forEach((im) => io.observe(im)); }
+
+async function loadSources() {
+  try {
+    const d = await jget("/wb/sources");
+    const sel = $("series");
+    sel.innerHTML = d.manga.map((s) => `<option>${esc(s)}</option>`).join("");
+    $("pixn").textContent = d.pixiv.length;
+    $("dirs").textContent = "漫画：" + d.dirs.manga + "\nPixiv：" + d.dirs.pixiv;
+    renderPixiv(d.pixiv);
+    renderLib(d.assets);
+    sel.onchange = () => loadChapters(sel.value);
+    $("chapter").onchange = () => loadPages(sel.value, $("chapter").value);
+    if (d.manga.length) await loadChapters(sel.value);
+  } catch (e) { msg("读取图库失败：" + esc(e.message), "err"); }
+}
+
+async function loadChapters(series) {
+  const d = await jget("/wb/manga?series=" + encodeURIComponent(series));
+  const sel = $("chapter");
+  sel.innerHTML = d.chapters.map((s) => `<option>${esc(s)}</option>`).join("");
+  if (d.chapters.length) await loadPages(series, d.chapters[0]);
+}
+
+async function loadPages(series, chapter) {
+  const d = await jget(`/wb/chapter?series=${encodeURIComponent(series)}&chapter=${encodeURIComponent(chapter)}`);
+  const box = $("pages");
+  box.innerHTML = "";
+  scJobs.length = 0;
+  for (let i = 0; i < d.pages; i++) {
+    const div = document.createElement("div");
+    div.className = "th";
+    div.innerHTML = `<img alt="${i + 1}" data-src="/wb/page?series=${encodeURIComponent(series)}&chapter=${encodeURIComponent(chapter)}&page=${i}&w=90"><span>${i + 1}</span>`;
+    div.onclick = () => {
+      box.querySelectorAll(".th").forEach((x) => x.classList.remove("sel"));
+      div.classList.add("sel");
+      setSrc({kind: "manga", series, chapter, page: i},
+             `/wb/page?series=${encodeURIComponent(series)}&chapter=${encodeURIComponent(chapter)}&page=${i}`,
+             `${series} / ${chapter} / p.${i + 1}`);
+    };
+    box.appendChild(div);
+    queueScore(series, chapter, i, div);
+  }
+  hookLazy();
+}
+
+let scJobs = [], scRunning = 0;
+function queueScore(series, chapter, i, div) {
+  scJobs.push(async () => {
+    if (!div.isConnected) return;
+    const d = await jget("/wb/score?src=" + encodeURIComponent(
+      JSON.stringify({kind: "manga", series, chapter, page: i})));
+    if (!div.isConnected) return;
+    const b = document.createElement("b");
+    b.className = "sc";
+    b.textContent = d.score;
+    b.style.color = d.score >= 65 ? "#8fd0ff" : (d.score >= 45 ? "var(--ink)" : "#e5533d");
+    div.appendChild(b);
+  });
+  pumpScore();
+}
+function pumpScore() {
+  while (scRunning < 4 && scJobs.length) {
+    const fn = scJobs.shift();
+    scRunning++;
+    fn().catch(() => {}).finally(() => { scRunning--; pumpScore(); });
+  }
+}
+
+function renderPixiv(names) {
+  const box = $("pixgrid");
+  box.innerHTML = "";
+  for (const name of names) {
+    const div = document.createElement("div");
+    div.className = "th";
+    div.innerHTML = `<img alt="" data-src="/wb/pixiv?name=${encodeURIComponent(name)}&w=110">`;
+    div.onclick = () => {
+      box.querySelectorAll(".th").forEach((x) => x.classList.remove("sel"));
+      div.classList.add("sel");
+      setSrc({kind: "pixiv", name}, "/wb/pixiv?name=" + encodeURIComponent(name), name);
+    };
+    box.appendChild(div);
+  }
+  hookLazy();
+}
+
+$("upfile").onchange = () => {
+  const f = $("upfile").files[0];
+  if (!f) return;
+  const fr = new FileReader();
+  fr.onload = async () => {
+    try {
+      const b64 = String(fr.result).split(",")[1];
+      const r = await jpost("/wb/upload", {name: f.name, data_b64: b64});
+      setSrc({kind: "upload", path: r.path},
+             "/wb/file?path=" + encodeURIComponent(r.path), f.name);
+      msg("已载入上传图：" + esc(f.name), "ok");
+    } catch (e) { msg("上传失败：" + esc(e.message), "err"); }
+  };
+  fr.readAsDataURL(f);
+};
+
+// ---------------- 抓取（komiic，经本机代理）
+const FETCH = {cid: null, title: ""};
+
+async function loadFetchProxy() {
+  try {
+    const d = await jget("/wb/fetch/search?kw=");
+    $("fproxy").textContent = d.proxy;
+  } catch (e) { $("fproxy").textContent = "代理未配置"; }
+}
+
+$("fgo").onclick = async () => {
+  const kw = $("fkw").value.trim();
+  if (!kw) return;
+  $("fhits").innerHTML = '<p style="font-size:11px;color:var(--dim)">搜索中…</p>';
+  $("fchs").innerHTML = "";
+  try {
+    const d = await jget("/wb/fetch/search?kw=" + encodeURIComponent(kw));
+    $("fproxy").textContent = d.proxy;
+    renderHits(d.hits);
+  } catch (e) {
+    $("fhits").innerHTML = `<p style="font-size:11px;color:#ff7c6a">${esc(e.message)}</p>`;
+  }
+};
+$("fkw").addEventListener("keydown", (e) => { if (e.key === "Enter") $("fgo").click(); });
+
+function renderHits(hits) {
+  const box = $("fhits");
+  box.innerHTML = "";
+  if (!hits.length) {
+    box.innerHTML = '<p style="font-size:11px;color:var(--dim)">没有结果</p>';
+    return;
+  }
+  for (const h of hits) {
+    const d = document.createElement("div");
+    d.className = "lib";
+    d.style.cursor = "pointer";
+    d.innerHTML = `<div class="t"><b>${esc(h.title)}</b><i>${esc((h.authors || []).join("、") || "—")} · ${esc(h.year || "")}</i></div>`;
+    d.onclick = () => loadFetchChapters(h);
+    box.appendChild(d);
+  }
+}
+
+async function loadFetchChapters(hit) {
+  FETCH.cid = hit.id; FETCH.title = hit.title;
+  const box = $("fchs");
+  box.innerHTML = '<p style="font-size:11px;color:var(--dim)">读章节列表…</p>';
+  try {
+    const d = await jget("/wb/fetch/chapters?cid=" + encodeURIComponent(hit.id));
+    box.innerHTML = "";
+    for (const c of d.chapters) {
+      const row = document.createElement("div");
+      row.className = "lib";
+      row.innerHTML = `<div class="t"><b>${esc(c.serial || "")}</b><i>${esc(c.type || "")} · ${c.size || "?"} 页</i></div>` +
+        `<button style="flex:0 0 auto">下载</button>`;
+      row.querySelector("button").onclick = (e) => fetchChapter(c, e.target);
+      box.appendChild(row);
+    }
+    msg("选一章点「下载」→ 打包 CBZ 落到漫画库。");
+  } catch (e) {
+    box.innerHTML = `<p style="font-size:11px;color:#ff7c6a">${esc(e.message)}</p>`;
+  }
+}
+
+async function fetchChapter(c, btn) {
+  if (S.busy) return;
+  S.busy = true; btn.disabled = true; btn.textContent = "下载中";
+  msg(`<span class="spin">正在下载《${esc(FETCH.title)}》${esc(c.serial || "")}（${c.size || "?"} 页）…</span>`);
+  try {
+    const r = await jpost("/wb/fetch/download",
+      {cid: FETCH.cid, chid: c.id, title: FETCH.title, serial: c.serial || "01"});
+    msg(`已入库：<b>${esc(FETCH.title)}</b> ${esc(c.serial || "")}（${r.pages} 页，${r.mb} MB${r.missed ? "，缺 " + r.missed + " 页" : ""}）。去「漫画库」标签看看。`, "ok");
+    const d = await jget("/wb/sources");
+    const sel = $("series");
+    sel.innerHTML = d.manga.map((s) => `<option>${esc(s)}</option>`).join("");
+    const m = /[\\/]([^\\/]+)[\\/][^\\/]+$/.exec(r.file || "");
+    const series = m ? m[1] : FETCH.title;
+    sel.value = series;
+    await loadChapters(series);
+    setTab("manga");
+  } catch (e) { msg("下载失败：" + esc(e.message), "err"); }
+  S.busy = false; btn.disabled = false; btn.textContent = "下载";
+}
+
+let LOAD_TOKEN = 0;
+function setSrc(src, url, label, opts) {
+  S.src = src; S.sel = -1; S.label = label;
+  const auto = !(opts && opts.noAuto);
+  const tk = ++LOAD_TOKEN;
+  const im = new Image();
+  im.onload = () => {
+    S.img = im; S.crop = [0, 0, 1, 1];
+    draw();
+    $("srchint").textContent = label;
+    msg("取景框可拖动/缩放，然后点「生成候选」。");
+    if (auto) { autoCrop(tk); scoreRef(tk); }
+  };
+  im.onerror = () => msg("参考图载入失败", "err");
+  im.src = url;
+  $("cands").innerHTML = `<span style="color:var(--dim);font-size:12px;align-self:center">点了「生成候选」后出现在这里</span>`;
+}
+
+async function autoCrop(tk) {
+  if (!S.src) return;
+  try {
+    const d = await jget("/wb/autocrop?src=" + encodeURIComponent(JSON.stringify(S.src)));
+    if (tk !== undefined && tk !== LOAD_TOKEN) return;
+    S.crop = d.crop; draw();
+  } catch (e) { /* 失败保持全图 */ }
+}
+
+async function scoreRef(tk) {
+  try {
+    const d = await jget("/wb/score?src=" + encodeURIComponent(JSON.stringify(S.src)));
+    if (tk !== undefined && tk !== LOAD_TOKEN) return;
+    const tone = d.score >= 65 ? "#8fd0ff" : (d.score >= 45 ? "var(--ink)" : "#e5533d");
+    $("srchint").innerHTML = esc(S.label) +
+      ` · <b style="color:${tone}">可描性 ${d.score}</b>` +
+      (d.advice ? ` <span style="color:var(--dim)">（${esc(d.advice)}）</span>` : "");
+  } catch (e) { /* 评分失败不打扰 */ }
+}
+
+function renderLib(assets) {
+  $("libn").textContent = assets.length;
+  const box = $("lib");
+  box.innerHTML = "";
+  for (const a of assets) {
+    const d = document.createElement("div");
+    d.className = "lib";
+    d.innerHTML = `<img src="/wb/assetfile?id=${encodeURIComponent(a.id)}&file=preview.png" alt="">` +
+      `<div class="t"><b>${esc(a.name)}</b><i>${esc(a.id)}` +
+      (a.aliases && a.aliases.length ? " · " + esc(a.aliases.join("、")) : "") +
+      `</i></div>` +
+      `<div class="ops"><button data-act="edit" title="加载到画布重新调（入库会覆盖同一 id）">调</button>` +
+      `<button data-act="del" title="从素材库删除">删</button></div>`;
+    d.querySelector('[data-act="edit"]').onclick = () => editAsset(a.id);
+    d.querySelector('[data-act="del"]').onclick = async () => {
+      if (!confirm("删除素材 " + a.name + "（" + a.id + "）？不可恢复。")) return;
+      try {
+        await jpost("/wb/asset/delete", {id: a.id});
+        msg("已删除：" + esc(a.id), "ok");
+        const dd = await jget("/wb/sources");
+        renderLib(dd.assets);
+      } catch (e) { msg("删除失败：" + esc(e.message), "err"); }
+    };
+    box.appendChild(d);
+  }
+}
+
+async function editAsset(id) {
+  try {
+    const d = await jget("/wb/asset?id=" + encodeURIComponent(id));
+    $("f-id").value = d.id || id;
+    $("f-name").value = d.name || "";
+    $("f-aliases").value = (d.aliases || []).join(",");
+    $("f-tags").value = (d.tags || []).join(",");
+    if (d.params && Object.keys(d.params).length) {
+      S.params = {...S.params, ...d.params};
+      syncUI();
+    }
+    setSrc({kind: "asset", id},
+           "/wb/assetfile?id=" + encodeURIComponent(id) + "&file=source.jpg",
+           "调整素材：" + (d.name || id), {noAuto: true});
+    msg("正在调整 <b>" + esc(id) + "</b>：改取景/参数换候选后，用同一 id 点「入库」即覆盖。", "ok");
+  } catch (e) { msg("载入素材失败：" + esc(e.message), "err"); }
+}
+
+// ---------------- 画布与取景
+const cv = $("cv"), ctx = cv.getContext("2d");
+let view = {ox: 0, oy: 0, w: 0, h: 0};
+
+function fitView() {
+  const box = cv.parentElement.getBoundingClientRect();
+  cv.width = Math.max(60, Math.round(box.width));
+  cv.height = Math.max(60, Math.round(box.height));
+  if (!S.img) return;
+  const iw = S.img.width, ih = S.img.height;
+  const k = Math.min(cv.width / iw, cv.height / ih) * 0.97;
+  view = {ox: (cv.width - iw * k) / 2, oy: (cv.height - ih * k) / 2, w: iw * k, h: ih * k};
+}
+
+function draw() {
+  fitView();
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  if (!S.img) return;
+  ctx.drawImage(S.img, view.ox, view.oy, view.w, view.h);
+  const c = S.crop;
+  const x = view.ox + c[0] * view.w, y = view.oy + c[1] * view.h;
+  const w = (c[2] - c[0]) * view.w, h = (c[3] - c[1]) * view.h;
+  ctx.fillStyle = "rgba(0,0,0,.55)";
+  ctx.fillRect(view.ox, view.oy, view.w, y - view.oy);
+  ctx.fillRect(view.ox, y + h, view.w, view.oy + view.h - (y + h));
+  ctx.fillRect(view.ox, y, x - view.ox, h);
+  ctx.fillRect(x + w, y, view.ox + view.w - (x + w), h);
+  ctx.strokeStyle = "#fff2d2"; ctx.lineWidth = 1; ctx.strokeRect(x + .5, y + .5, w, h);
+  ctx.fillStyle = "#fff2d2";
+  for (const [hx, hy] of [[x, y], [x + w, y], [x, y + h], [x + w, y + h]]) ctx.fillRect(hx - 3, hy - 3, 6, 6);
+}
+window.addEventListener("resize", draw);
+
+let drag = null;
+function evPos(e) { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
+function norm(px, py) {
+  return [Math.min(1, Math.max(0, (px - view.ox) / view.w)), Math.min(1, Math.max(0, (py - view.oy) / view.h))];
+}
+cv.addEventListener("pointerdown", (e) => {
+  if (!S.img) return;
+  const [px, py] = evPos(e);
+  const c = S.crop;
+  const x = view.ox + c[0] * view.w, y = view.oy + c[1] * view.h;
+  const w = (c[2] - c[0]) * view.w, h = (c[3] - c[1]) * view.h;
+  const near = (ax, ay) => Math.abs(px - ax) < 10 && Math.abs(py - ay) < 10;
+  let mode = "new", corner = null;
+  if (near(x, y)) { mode = "rz"; corner = 0; }
+  else if (near(x + w, y)) { mode = "rz"; corner = 1; }
+  else if (near(x, y + h)) { mode = "rz"; corner = 2; }
+  else if (near(x + w, y + h)) { mode = "rz"; corner = 3; }
+  else if (px > x && px < x + w && py > y && py < y + h) mode = "mv";
+  drag = {mode, corner, start: norm(px, py), crop0: c.slice()};
+  if (mode === "new") S.crop = [drag.start[0], drag.start[1], drag.start[0], drag.start[1]];
+  cv.setPointerCapture(e.pointerId);
+  draw();
+});
+cv.addEventListener("pointermove", (e) => {
+  if (!drag || !S.img) return;
+  const [px, py] = evPos(e);
+  const p = norm(px, py);
+  const c0 = drag.crop0, s0 = drag.start;
+  if (drag.mode === "mv") {
+    const dx = p[0] - s0[0], dy = p[1] - s0[1];
+    const w = c0[2] - c0[0], h = c0[3] - c0[1];
+    const nx = Math.min(1 - w, Math.max(0, c0[0] + dx));
+    const ny = Math.min(1 - h, Math.max(0, c0[1] + dy));
+    S.crop = [nx, ny, nx + w, ny + h];
+  } else if (drag.mode === "rz") {
+    const pts = [[c0[0], c0[1]], [c0[2], c0[1]], [c0[0], c0[3]], [c0[2], c0[3]]];
+    pts[drag.corner] = p;
+    const xs = pts.map((q) => q[0]), ys = pts.map((q) => q[1]);
+    S.crop = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+  } else {
+    const x0 = Math.min(s0[0], p[0]), y0 = Math.min(s0[1], p[1]);
+    const x1 = Math.max(s0[0], p[0]), y1 = Math.max(s0[1], p[1]);
+    S.crop = [x0, y0, x1, y1];
+  }
+  draw();
+});
+cv.addEventListener("pointerup", () => {
+  drag = null;
+  const c = S.crop;
+  if (c[2] - c[0] < 0.04 || c[3] - c[1] < 0.04) S.crop = [0, 0, 1, 1];
+  draw();
+});
+cv.addEventListener("dblclick", () => { S.crop = [0, 0, 1, 1]; draw(); });
+
+function preset(c) { S.crop = c; draw(); }
+$("pq-auto").onclick = async () => { await autoCrop(); msg("已自动去掉边缘空白（还能手动再拖）。"); };
+$("pq-full").onclick = () => preset([0, 0, 1, 1]);
+$("pq-top").onclick = () => preset([0, 0, 1, 0.55]);
+$("pq-face").onclick = () => preset([0.16, 0.03, 0.92, 0.45]);
+$("pq-mid").onclick = () => preset([0.0, 0.2, 1.0, 0.8]);
+$("guidebtn").onclick = (e) => {
+  e.preventDefault();
+  const g = $("guide");
+  g.style.display = g.style.display === "none" ? "block" : "none";
+};
+
+// ---------------- 参数
+function syncUI() {
+  const p = S.params;
+  document.querySelectorAll(".dens").forEach((b) => {
+    const [c, r] = b.dataset.dens.split(",").map(Number);
+    b.classList.toggle("on", c === p.cols && r === p.rows);
+  });
+  $("contrast").value = Math.round(p.contrast * 100);
+  $("cv-contrast").textContent = Number(p.contrast).toFixed(2);
+  $("key").checked = !!p.key;
+  $("ktol").value = Math.round((p.key_tol ?? 0.16) * 100);
+  $("ktolv").textContent = Number(p.key_tol ?? 0.16).toFixed(2);
+  $("invert").checked = !!p.invert;
+}
+document.querySelectorAll(".dens").forEach((b) => {
+  b.onclick = () => {
+    const [c, r] = b.dataset.dens.split(",").map(Number);
+    S.params = {...S.params, cols: c, rows: r};
+    syncUI();
+  };
+});
+$("contrast").oninput = () => {
+  S.params = {...S.params, contrast: $("contrast").value / 100};
+  $("cv-contrast").textContent = Number(S.params.contrast).toFixed(2);
+};
+$("key").onchange = () => { S.params = {...S.params, key: $("key").checked}; };
+$("ktol").oninput = () => {
+  S.params = {...S.params, key_tol: $("ktol").value / 100};
+  $("ktolv").textContent = Number(S.params.key_tol).toFixed(2);
+};
+$("invert").onchange = () => { S.params = {...S.params, invert: $("invert").checked}; };
+
+// ---------------- 候选 / 入库 / AI
+$("go").onclick = async () => {
+  if (!S.src || !S.img) return msg("先在左边选一张参考图", "err");
+  if (S.busy) return;
+  S.busy = true; $("go").disabled = true;
+  msg('<span class="spin">正在描图：6 张候选，约几秒…</span>');
+  try {
+    const r = await jpost("/wb/candidates", {src: S.src, crop: S.crop, params: S.params});
+    renderCands(r.candidates);
+    msg("候选好了：★推荐已自动选中；不满意点别的。右侧可点「AI 建议」填名字，再入库。", "ok");
+  } catch (e) { msg("生成失败：" + esc(e.message), "err"); }
+  S.busy = false; $("go").disabled = false;
+};
+
+let CANDS = [];
+function renderCands(list) {
+  CANDS = list;
+  const box = $("cands");
+  box.innerHTML = "";
+  list.forEach((c, i) => {
+    const d = document.createElement("div");
+    d.className = "cand" + (c.recommended ? " rec" : "");
+    d.innerHTML = `<img src="data:image/png;base64,${c.png_b64}" alt=""><div class="lab"><span>${c.recommended ? "★ " : ""}${esc(c.label)}</span><span>${c.cover}%</span></div>`;
+    d.onclick = () => selectCand(i);
+    box.appendChild(d);
+  });
+  const ri = list.findIndex((c) => c.recommended);
+  if (ri >= 0) selectCand(ri, true);
+}
+function selectCand(i, quiet) {
+  const kids = $("cands").querySelectorAll(".cand");
+  if (!kids[i]) return;
+  kids.forEach((x, j) => x.classList.toggle("sel", j === i));
+  const c = CANDS[i];
+  if (!c) return;
+  S.sel = i;
+  S.params = {...c.params};
+  syncUI();
+  if (!quiet) msg("已选：" + esc(c.label) + "（参数已同步到上面一排）");
+}
+
+function autoId(name) {
+  const a = String(name || "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  return a || ("asset_" + Date.now().toString(36));
+}
+
+$("suggest").onclick = async () => {
+  if (!S.src) return msg("先选参考图", "err");
+  msg('<span class="spin">视觉模型正在看图（几秒）…</span>');
+  try {
+    const r = await jpost("/wb/suggest", {src: S.src, crop: S.crop, params: S.params});
+    if (r.error) return msg("AI 建议失败：" + esc(r.error), "err");
+    if (!$("f-name").value) $("f-name").value = r.name || "";
+    if (!$("f-aliases").value) $("f-aliases").value = (r.aliases || []).join(",");
+    if (!$("f-tags").value) $("f-tags").value = (r.tags || []).join(",");
+    if (!$("f-id").value) $("f-id").value = autoId(r.name);
+    $("desc").textContent = (r.desc || "") + "  ·  " + (r.model || "");
+    msg("AI 建议已填入（都可以改）", "ok");
+  } catch (e) { msg("AI 建议失败：" + esc(e.message), "err"); }
+};
+
+$("save").onclick = async () => {
+  if (!S.src) return msg("先选参考图", "err");
+  const meta = {id: $("f-id").value.trim(), name: $("f-name").value.trim(),
+                aliases: $("f-aliases").value.trim(), tags: $("f-tags").value.trim()};
+  if (!meta.id) return msg("id 必填（小写字母/数字/_/-）", "err");
+  if (S.busy) return;
+  S.busy = true; $("save").disabled = true;
+  msg('<span class="spin">正在描图入库…</span>');
+  try {
+    const r = await jpost("/wb/save", {src: S.src, crop: S.crop, params: S.params, meta});
+    msg(`已入库：<b>${esc(r.id)}</b>（覆盖 ${r.cover}%）。回对话页说「给我看 ${esc(meta.name || r.id)}」。`, "ok");
+    const d = await jget("/wb/sources");
+    renderLib(d.assets);
+  } catch (e) { msg("入库失败：" + esc(e.message), "err"); }
+  S.busy = false; $("save").disabled = false;
+};
+
+async function init() {
+  syncUI();
+  await loadSources();
+  const qp = new URLSearchParams(location.search);
+  try {
+    if (qp.get("cols")) S.params.cols = parseInt(qp.get("cols"));
+    if (qp.get("rows")) S.params.rows = parseInt(qp.get("rows"));
+    if (qp.get("contrast")) S.params.contrast = parseFloat(qp.get("contrast"));
+    if (qp.get("key")) S.params.key = qp.get("key") !== "0";
+    if (qp.get("ktol")) S.params.key_tol = parseFloat(qp.get("ktol"));
+    if (qp.get("invert")) S.params.invert = qp.get("invert") === "1";
+    syncUI();
+    if (qp.get("kind") === "manga" && qp.get("series")) {
+      const series = qp.get("series"), page = parseInt(qp.get("page") || "0");
+      $("series").value = series;
+      await loadChapters(series);
+      if (qp.get("chapter")) { $("chapter").value = qp.get("chapter"); await loadPages(series, qp.get("chapter")); }
+      setTab("manga");
+      const chapter = $("chapter").value;
+      setSrc({kind: "manga", series, chapter, page},
+             `/wb/page?series=${encodeURIComponent(series)}&chapter=${encodeURIComponent(chapter)}&page=${page}`,
+             `${series} / p.${page + 1}`);
+    } else if (qp.get("kind") === "pixiv" && qp.get("name")) {
+      setTab("pixiv");
+      setSrc({kind: "pixiv", name: qp.get("name")},
+             "/wb/pixiv?name=" + encodeURIComponent(qp.get("name")), qp.get("name"));
+    }
+    if (qp.get("go")) setTimeout(() => $("go").click(), 400);
+    if (qp.get("fkw")) {
+      $("fkw").value = qp.get("fkw"); setTab("fetch"); loadFetchProxy(); $("fgo").click();
+    } else if (qp.get("tab")) {
+      setTab(qp.get("tab"));
+      if (qp.get("tab") === "fetch") loadFetchProxy();
+    }
+  } catch (e) { msg("深链载入失败：" + esc(e.message), "err"); }
+}
+init();
+</script>
+</body>
+</html>
